@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http.Connections;
+
 namespace TaskList
 {
 	public class TaskListExecutor
@@ -17,6 +19,7 @@ namespace TaskList
 		{
 			Execute("show");
 
+			Execute("add project secrets");
 			Execute("add project secrets");
 			Execute("add task secrets Eat more donuts.");
 			Execute("add task secrets Destroy all humans.");
@@ -41,11 +44,22 @@ namespace TaskList
 			Execute("deadline 4 25-1-2025");
 			Execute("deadline 8 27-1-2025");
 			Execute("deadline 3 25-1-2025");
+			Execute("deadline 1 25-1-2025");
+			Execute("deadline 2 20-6-2006");
 			Execute("show");
 
+			_console.WriteLine("--------today----------");
 			Execute("today");
+			_console.WriteLine("--------today----------");
 			Execute("show");
-			
+			_console.WriteLine("--------view-by-deadline----------");
+			Execute("view-by-deadline");
+			_console.WriteLine("--------view-by-deadline----------");
+			Execute("show");
+			_console.WriteLine("--------view-project-by-deadline----------");
+			Execute("view-project-by-deadline");
+			_console.WriteLine("--------view-project-by-deadline----------");
+			Execute("show");
 		}
 
 		public void Execute(string commandLine)
@@ -74,11 +88,12 @@ namespace TaskList
 				case "today":
 					ShowTodaysProjects();
 					break;
-				
 				case "view-by-deadline":
+					ViewByDeadlines();
+					break;
 				case "view-project-by-deadline":
-				//deadline
-				//group by
+					ViewByDeadlinesGroupByProject();
+					break;
 				default:
 					UnrecognisedCommandError(command);
 					break;
@@ -105,6 +120,74 @@ namespace TaskList
 				}
 				_console.WriteLine();
 			}
+		}
+
+		private void ShowByDeadline(IDictionary<string, IList<Task>> projects, DateOnly deadline)
+		{
+			if (deadline == new DateOnly())
+				_console.WriteLine("No deadline:");
+			else
+				_console.WriteLine("{0}:", deadline);
+
+			foreach (var project in projects) 
+			{
+				foreach(var task in project.Value)
+					_console.WriteLine("    {0}: {1} : deadline", task.Id, task.Description);
+			}
+			_console.WriteLine();
+		}
+
+		private void ShowByDeadlineByGroup(IDictionary<string, IList<Task>> projects, DateOnly deadline)
+		{
+			if (deadline == new DateOnly())
+				_console.WriteLine("No deadline:");
+			else
+				_console.WriteLine("{0}:", deadline);
+
+			foreach (var project in projects) 
+			{
+				_console.WriteLine("    " + project.Key + ":");
+				foreach(var task in project.Value)
+					_console.WriteLine("        {0}: {1} : deadline", task.Id, task.Description);
+			}
+			_console.WriteLine();
+		}
+
+		private void ViewByDeadlines()
+		{
+			var deadlines = GetDeadLinesList();
+			foreach (var deadline in deadlines)
+			{
+				var deadLineTasks = GetTasksByDay(deadline);
+				ShowByDeadline(deadLineTasks, deadline);
+			}
+		}
+
+		private void ViewByDeadlinesGroupByProject()
+		{
+			var deadlines = GetDeadLinesList();
+			foreach (var deadline in deadlines)
+			{
+				var deadLineTasks = GetTasksByDay(deadline);
+
+				ShowByDeadlineByGroup(deadLineTasks, deadline);
+			}
+		}
+
+
+
+		private List<DateOnly> GetDeadLinesList()
+		{
+			var deadlines = _tasks.Values
+                          .SelectMany(tasks => tasks)
+                          .Where(task => task.Deadline != new DateOnly())
+                          .Select(task => task.Deadline)
+                          .Distinct()
+                          .OrderBy(deadline => deadline)
+                          .ToList();
+
+			deadlines.Add(new DateOnly());
+			return deadlines;
 		}
 
 		private void Add(string commandLine)
@@ -157,14 +240,7 @@ namespace TaskList
 					_console.WriteLine("Could not find a task with an ID of {0}.", taskId);
 					return;
 				}
-
-				
-
 				task.Deadline = dateOnly;
-
-				// updatetask
-				// find project
-				// get the list
 			} 
 			catch {
 				_console.WriteLine("The given deadline input should be like this: 'deadline <task id> <d-m-yyyy>'");
@@ -210,14 +286,19 @@ namespace TaskList
 		{
 				DateOnly today = DateOnly.FromDateTime(DateTime.Now);
 				// Filter tasks and reconstruct the dictionary
-				IDictionary<string, IList<Task>> todayTasks = _tasks
-				.Where(project => project.Value.Any(task => task.Deadline == today))
-				.ToDictionary(
-					kvp => kvp.Key,
-					kvp => (IList<Task>)kvp.Value.Where(task => task.Deadline == today).ToList()
-				);
+				IDictionary<string, IList<Task>> todayTasks = GetTasksByDay(today);
 				
 				Show(todayTasks);
+		}
+
+		private IDictionary<string, IList<Task>> GetTasksByDay(DateOnly day)
+		{
+			return _tasks
+				.Where(project => project.Value.Any(task => task.Deadline == day))
+				.ToDictionary(
+					kvp => kvp.Key,
+					kvp => (IList<Task>)kvp.Value.Where(task => task.Deadline == day).ToList()
+				);
 		}
 
 		private void Help()
@@ -234,11 +315,6 @@ namespace TaskList
 		private void UnrecognisedCommandError(string command)
 		{
 			_console.WriteLine("I don't know what the command \"{0}\" is.", command);
-		}
-
-		private void FormatError(string command, string format)
-		{
-			_console.WriteLine($"Please format the {command} command like this: {format}");
 		}
 
 		private long NextId()
