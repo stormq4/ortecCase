@@ -9,8 +9,8 @@ namespace TaskList
 		private const string QUIT = "quit";
 		public static readonly string startupText = "Welcome to TaskList! Type 'help' for available commands.";
 
-		private readonly IDictionary<string, IList<Task>> tasks = new Dictionary<string, IList<Task>>();
-		private readonly IConsole console;
+		private readonly IDictionary<string, IList<Task>> _tasks = new Dictionary<string, IList<Task>>();
+		private readonly IConsole _console;
 
 		private long lastId = 0;
 
@@ -21,19 +21,19 @@ namespace TaskList
 
 		public TaskList(IConsole console)
 		{
-			this.console = console;
+			this._console = console;
 		}
 
-		public void Run()
+		public void Run() // apparte klasse voor console
 		{
-			console.WriteLine(startupText);
+			_console.WriteLine(startupText);
 			while (true) {
-				console.Write("> ");
-				var command = console.ReadLine();
+				_console.Write("> ");
+				var command = _console.ReadLine();
 				if (command == QUIT) {
 					break;
 				}
-				Execute(command);
+				Execute(command); // apparte klasse --> met interface
 			}
 		}
 
@@ -46,36 +46,41 @@ namespace TaskList
 				Show();
 				break;
 			case "add":
-				Adjdd(commandRest[1]);
+				Add(commandRest[1]); // mooi errors afhandelen
 				break;
 			case "check":
-				Check(commandRest[1]);
+				Check(commandRest[1]); // mooi errors afhandelen
 				break;
 			case "uncheck":
-				Uncheck(commandRest[1]);
+				Uncheck(commandRest[1]); // mooi errors afhandelen
 				break;
 			case "help":
 				Help();
 				break;
+			//deadline
+			//today
+			//deadline
+			//group by
 			default:
-				Error(command);
+				UnrecognisedCommandError(command);
 				break;
 			}
 		}
 
 		private void Show()
 		{
-			foreach (var project in tasks) {
-				console.WriteLine(project.Key);
+			foreach (var project in _tasks) {
+				_console.WriteLine(project.Key);
 				foreach (var task in project.Value) {
-					console.WriteLine("    [{0}] {1}: {2}", (task.Done ? 'x' : ' '), task.Id, task.Description);
+					_console.WriteLine("    [{0}] {1}: {2}", (task.Done ? 'x' : ' '), task.Id, task.Description);
 				}
-				console.WriteLine();
+				_console.WriteLine();
 			}
 		}
 
 		private void Add(string commandLine)
 		{
+			//error
 			var subcommandRest = commandLine.Split(" ".ToCharArray(), 2);
 			var subcommand = subcommandRest[0];
 			if (subcommand == "project") {
@@ -88,12 +93,14 @@ namespace TaskList
 
 		private void AddProject(string name)
 		{
-			tasks[name] = new List<Task>();
+			//error
+			_tasks[name] = new List<Task>();
 		}
 
 		private void AddTask(string project, string description)
 		{
-			if (!tasks.TryGetValue(project, out IList<Task> projectTasks))
+			// error
+			if (!_tasks.TryGetValue(project, out IList<Task> projectTasks))
 			{
 				Console.WriteLine("Could not find a project with the name \"{0}\".", project);
 				return;
@@ -113,13 +120,18 @@ namespace TaskList
 
 		private void SetDone(string idString, bool done)
 		{
+			if (string.IsNullOrEmpty(idString))
+			{
+				// add something
+				return;
+			}
 			int id = int.Parse(idString);
-			var identifiedTask = tasks
+			var identifiedTask = _tasks
 				.Select(project => project.Value.FirstOrDefault(task => task.Id == id))
 				.Where(task => task != null)
 				.FirstOrDefault();
 			if (identifiedTask == null) {
-				console.WriteLine("Could not find a task with an ID of {0}.", id);
+				_console.WriteLine("Could not find a task with an ID of {0}.", id);
 				return;
 			}
 
@@ -128,18 +140,18 @@ namespace TaskList
 
 		private void Help()
 		{
-			console.WriteLine("Commands:");
-			console.WriteLine("  show");
-			console.WriteLine("  add project <project name>");
-			console.WriteLine("  add task <project name> <task description>");
-			console.WriteLine("  check <task ID>");
-			console.WriteLine("  uncheck <task ID>");
-			console.WriteLine();
+			_console.WriteLine("Commands:");
+			_console.WriteLine("  show");
+			_console.WriteLine("  add project <project name>");
+			_console.WriteLine("  add task <project name> <task description>");
+			_console.WriteLine("  check <task ID>");
+			_console.WriteLine("  uncheck <task ID>");
+			_console.WriteLine();
 		}
 
-		private void Error(string command)
+		private void UnrecognisedCommandError(string command)
 		{
-			console.WriteLine("I don't know what the command \"{0}\" is.", command);
+			_console.WriteLine("I don't know what the command \"{0}\" is.", command);
 		}
 
 		private long NextId()
