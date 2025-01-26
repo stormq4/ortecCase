@@ -5,9 +5,6 @@ namespace TaskList
 	public class TaskListExecutor
 	{
 		private readonly ITaskListService _taskListService;
-
-		private readonly IDictionary<string, IList<Task>> _taskLists = new Dictionary<string, IList<Task>>();
-		private long lastId = 0;
 		private readonly IConsole _console;
 
 		public TaskListExecutor(IConsole console, ITaskListService taskListService)
@@ -52,25 +49,38 @@ namespace TaskList
 
 			_console.WriteLine("--------today----------");
 			Execute("today");
-			_console.WriteLine("--------today----------");
+			_console.WriteLine("--------show----------");
 			Execute("show");
 			_console.WriteLine("--------view-by-deadline----------");
 			Execute("view-by-deadline");
-			_console.WriteLine("--------view-by-deadline----------");
+			_console.WriteLine("--------show---------");
 			Execute("show");
 			_console.WriteLine("--------view-project-by-deadline----------");
 			Execute("view-project-by-deadline");
-			_console.WriteLine("--------view-project-by-deadline----------");
+			_console.WriteLine("--------show----------");
 			Execute("show");
 		}
 
 		public void Execute(string commandLine)
 		{
-			var commandRest = commandLine.Split(" ".ToCharArray(), 2);
-			var command = commandRest[0];
+			try 
+			{
+				var commandRest = commandLine.Split(" ".ToCharArray(), 2);
+				var command = commandRest[0];
+				ExecuteSwitch(command, commandRest);
+			} 
+			catch (Exception ex)
+			{
+				_console.WriteLine(ex.Message);
+			}
+
+		}
+
+		private void ExecuteSwitch(string command, string[] commandRest)
+		{
 			switch (command) {
 				case "show":
-					Show(_taskLists);
+					ShowProjects();
 					break;
 				case "add":
 					Add(commandRest[1]);
@@ -115,6 +125,10 @@ namespace TaskList
 
 		private void Check (string idString) => _taskListService.Check(idString);
 		private void UnCheck (string idString) => _taskListService.UnCheck(idString);
+
+		
+
+		private void ShowProjects() => Show(_taskListService.GetProjects());
 
 		private void Show(IDictionary<string, IList<Task>> tasks)
 		{
@@ -163,7 +177,7 @@ namespace TaskList
 			var deadlines = _taskListService.GetDeadLinesList();
 			foreach (var deadline in deadlines)
 			{
-				var deadLineTasks = _taskListService.GetTasksByDay(deadline);
+				var deadLineTasks = _taskListService.GetProjectsByDay(deadline);
 				ShowTasksByDeadline(deadLineTasks, deadline);
 			}
 		}
@@ -173,7 +187,7 @@ namespace TaskList
 			var deadlines = _taskListService.GetDeadLinesList();
 			foreach (var deadline in deadlines)
 			{
-				var deadLineTasks = _taskListService.GetTasksByDay(deadline);
+				var deadLineTasks = _taskListService.GetProjectsByDay(deadline);
 
 				ShowDeadlineByProject(deadLineTasks, deadline);
 			}
@@ -190,7 +204,7 @@ namespace TaskList
 				_taskListService.AddTask(projectTask[0], projectTask[1]);
 			}
 			else
-				throw (new Exception("Please format the input like this add project <project name> or add task <project name> <task description"));
+				throw new Exception("Please format the input like this add project <project name> or add task <project name> <task description");
 		}
 
 		private void AddDeadline(string commandLine)
@@ -203,14 +217,12 @@ namespace TaskList
 
 				var task = _taskListService.GetTaskById(taskId);
 				if (task == null)
-				{
-					_console.WriteLine("Could not find a task with an ID of {0}.", taskId);
-					return;
-				}
+					throw new Exception(string.Format("Could not find a task with an ID of {0}.", taskId));
+
 				task.Deadline = dateOnly;
 			} 
 			catch {
-				_console.WriteLine("The given deadline input should be like this: 'deadline <task id> <d-m-yyyy>'");
+				throw new Exception("The given deadline input should be like this: 'deadline <task id> <d-m-yyyy>'");
 			}
 		}
 
@@ -219,7 +231,7 @@ namespace TaskList
 		{
 				DateOnly today = DateOnly.FromDateTime(DateTime.Now);
 				// Filter tasks and reconstruct the dictionary
-				IDictionary<string, IList<Task>> todayTasks = _taskListService.GetTasksByDay(today);
+				IDictionary<string, IList<Task>> todayTasks = _taskListService.GetProjectsByDay(today);
 				
 				Show(todayTasks);
 		}
