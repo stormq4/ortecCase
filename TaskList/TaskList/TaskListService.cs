@@ -3,13 +3,16 @@ namespace TaskList
 	public interface ITaskListService
 	{
 		IDictionary<string, IList<Task>> GetProjects();
-		void AddProject(string name);
-		void AddTask(string project, string description);
+		void PostProject(string name);
+		void PostTask(string project, string description);
 		void Check(string idString);
 		public void UnCheck(string idString);
 		Task? GetTaskById(long taskId);
 		IDictionary<string, IList<Task>> GetProjectsByDay(DateOnly day);
 		List<DateOnly> GetDeadLinesList();
+		void UpdateTaskDeadline(long taskId, DateOnly date);
+		List<(DateOnly, IList<Task>)> GetTasksByDeadline();
+		List<(DateOnly, IDictionary<string, IList<Task>>)> GetProjectsByDeadline();
 	}
 
 	public class TaskListService: ITaskListService
@@ -20,19 +23,28 @@ namespace TaskList
 
 		public IDictionary<string, IList<Task>> GetProjects() => _projects;
 
-		public void AddProject(string name)
+		public void PostProject(string name)
 		{
 			if (_projects.ContainsKey(name))
             	throw new Exception($"Project '{name}' already exists.");
 			_projects[name] = new List<Task>();
 		}
 
-		public void AddTask(string project, string description)
+		public void PostTask(string project, string description)
 		{
 			if (!_projects.TryGetValue(project, out IList<Task> projectTasks))
 				throw new Exception(string.Format("Could not find a project with the name \"{0}\".", project));
 			
 			projectTasks.Add(new Task { Id = NextId(), Description = description, Done = false });
+		}
+
+		public void UpdateTaskDeadline(long taskId, DateOnly date)
+		{
+			var task = GetTaskById(taskId);
+			if (task == null)
+				throw new Exception(string.Format("Could not find a task with an ID of {0}.", taskId));
+
+			task.Deadline = date;
 		}
 
 		public void Check(string idString)
@@ -87,6 +99,31 @@ namespace TaskList
 
 			deadlines.Add(new DateOnly());
 			return deadlines;
+		}
+
+		public List<(DateOnly, IList<Task>)> GetTasksByDeadline()
+		{
+			var deadlineTasks = new List<(DateOnly, IList<Task>)>();
+			var deadlines = GetDeadLinesList();
+			foreach (var deadline in deadlines)
+			{
+				var projectsByDeadeline = GetProjectsByDay(deadline);
+				var tasks = projectsByDeadeline.Values.SelectMany(tasks => tasks).ToList();
+				deadlineTasks.Add((deadline, tasks));
+			}
+			return deadlineTasks;
+		}
+
+		public List<(DateOnly, IDictionary<string, IList<Task>>)> GetProjectsByDeadline()
+		{
+			var deadlineDict = new List<(DateOnly, IDictionary<string, IList<Task>>)>();
+			var deadlines = GetDeadLinesList();
+			foreach (var deadline in deadlines)
+			{
+				var deadLineTasks = GetProjectsByDay(deadline);
+				deadlineDict.Add((deadline, deadLineTasks));
+			}
+			return deadlineDict;
 		}
 
 		private long NextId()

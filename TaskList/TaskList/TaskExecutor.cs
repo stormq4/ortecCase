@@ -103,7 +103,7 @@ namespace TaskList
 				case "today":
 					ViewTodaysProjects();
 					break;
-				case "v":
+				case "view-by-deadline":
 					ViewByDeadlines();
 					break;
 				case "view-project-by-deadline":
@@ -187,10 +187,10 @@ namespace TaskList
 			var subcommandRest = commandLine.Split(" ".ToCharArray(), 2);
 			var subcommand = subcommandRest[0];
 			if (subcommand == "project") {
-				_taskListService.AddProject(subcommandRest[1]);
+				_taskListService.PostProject(subcommandRest[1]);
 			} else if (subcommand == "task") {
 				var projectTask = subcommandRest[1].Split(" ".ToCharArray(), 2);
-				_taskListService.AddTask(projectTask[0], projectTask[1]);
+				_taskListService.PostTask(projectTask[0], projectTask[1]);
 			}
 			else
 				throw new Exception("Please format the input like this 'add project <project name>' or 'add task <project name> <task description>'");
@@ -206,20 +206,16 @@ namespace TaskList
 			if (!DateOnly.TryParseExact(dateString, "d-M-yyyy", out DateOnly date))
 				throw new Exception("The given deadline input should be like this: 'deadline <task id> <d-m-yyyy>'");
 
-			var task = _taskListService.GetTaskById(taskId);
-			if (task == null)
-				throw new Exception(string.Format("Could not find a task with an ID of {0}.", taskId));
-
-			task.Deadline = date;
+			_taskListService.UpdateTaskDeadline(taskId, date);
+	
 		}
-
 
 		private void ViewTodaysProjects()
 		{
-				DateOnly today = DateOnly.FromDateTime(DateTime.Now);
-				IDictionary<string, IList<Task>> todayTasks = _taskListService.GetProjectsByDay(today);
-				
-				Show(todayTasks);
+			DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+			IDictionary<string, IList<Task>> todayTasks = _taskListService.GetProjectsByDay(today);
+			
+			Show(todayTasks);
 		}
 
 		private void Help()
