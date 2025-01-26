@@ -104,7 +104,7 @@ namespace TaskList
 					ViewTodaysProjects();
 					break;
 				case "view-by-deadline":
-					ViewByDeadlines();
+					ViewDeadlineByTasks();
 					break;
 				case "view-project-by-deadline":
 					ViewByDeadlinesGroupByProject();
@@ -130,22 +130,21 @@ namespace TaskList
 			}
 		}
 
-		private void ShowTasksByDeadline(IDictionary<string, IList<Task>> projects, DateOnly deadline)
+		private void ShowTasksByDeadline(DateOnly deadline, IList<Task> tasks )
 		{
 			if (deadline == new DateOnly())
 				_console.WriteLine("No deadline:");
 			else
 				_console.WriteLine("{0}:", deadline);
 
-			foreach (var project in projects) 
+			foreach(var task in tasks)
 			{
-				foreach(var task in project.Value)
-					_console.WriteLine("    {0}: {1}", task.Id, task.Description);
+				_console.WriteLine("    {0}: {1}", task.Id, task.Description);
 			}
 			_console.WriteLine();
 		}
 
-		private void ShowDeadlineByProject(IDictionary<string, IList<Task>> projects, DateOnly deadline)
+		private void ShowDeadlineByProject( DateOnly deadline,IDictionary<string, IList<Task>> projects)
 		{
 			if (deadline == new DateOnly())
 				_console.WriteLine("No deadline:");
@@ -161,24 +160,22 @@ namespace TaskList
 			_console.WriteLine();
 		}
 
-		private void ViewByDeadlines()
+		private void ViewDeadlineByTasks()
 		{
-			var deadlines = _taskListService.GetDeadLinesList();
-			foreach (var deadline in deadlines)
+			var deadlinesTasks = _taskListService.GetTasksByDeadline();
+			foreach (var deadlineTask in deadlinesTasks)
 			{
-				var deadLineTasks = _taskListService.GetProjectsByDay(deadline);
-				ShowTasksByDeadline(deadLineTasks, deadline);
+				ShowTasksByDeadline(deadlineTask.Item1, deadlineTask.Item2);
 			}
 		}
 
 		private void ViewByDeadlinesGroupByProject()
 		{
-			var deadlines = _taskListService.GetDeadLinesList();
-			foreach (var deadline in deadlines)
-			{
-				var deadLineTasks = _taskListService.GetProjectsByDay(deadline);
+			var projectDeadlines = _taskListService.GetProjectsByDeadline();
 
-				ShowDeadlineByProject(deadLineTasks, deadline);
+			foreach(var deadLineProject in projectDeadlines)
+			{
+				ShowDeadlineByProject(deadLineProject.Item1, deadLineProject.Item2);
 			}
 		}
 

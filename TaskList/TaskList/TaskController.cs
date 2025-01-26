@@ -1,4 +1,6 @@
 using System.Reflection.Metadata.Ecma335;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +20,6 @@ namespace TaskList
         [HttpGet]
         public IActionResult GetTasks()
         {
-            // var tasks = Enumerable.Range(1, 5).Select(index => "task" + index).ToArray();
             var tasks =  _taskListService.GetProjects();
             return Ok(tasks);
         }
@@ -62,8 +63,8 @@ namespace TaskList
             }
         }
 
-        [HttpPut("/projects/tasks/{task_id}")] // removed {projectId}
-        public IActionResult UpdateTaskDeadline(string project_id, long task_id, [FromQuery] string deadline)
+        [HttpPut("tasks/{task_id}")] // removed {projectId}
+        public IActionResult UpdateTaskDeadline(long task_id, [FromQuery] string deadline)
         {
             try
             {
@@ -80,12 +81,12 @@ namespace TaskList
             }
         }
 
-        [HttpGet("/view_by_deadline")]
+        [HttpGet("view_by_deadline")]
         public IActionResult GetTasksByDeadline()
         {
             try 
             {
-                return Ok(_taskListService.GetTasksByDeadline());
+                return Ok(JsonSerializer.Serialize(_taskListService.GetTasksByDeadline()));
             }
             catch (Exception ex)
             {
@@ -93,12 +94,14 @@ namespace TaskList
             }
         }
 
-        [HttpGet("/view-project-by-deadline")]
+        [HttpGet("view-project-by-deadline")]
         public IActionResult GetProjectsByDeadline()
         {
             try 
             {
-                return Ok(_taskListService.GetProjectsByDeadline());
+                var projects = _taskListService.GetProjectsByDeadline();
+
+                return Ok(JsonSerializer.Serialize(projects));
             } 
             catch (Exception ex)
             {

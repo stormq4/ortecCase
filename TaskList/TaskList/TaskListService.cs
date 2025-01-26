@@ -7,10 +7,8 @@ namespace TaskList
 		void PostTask(string project, string description);
 		void Check(string idString);
 		public void UnCheck(string idString);
-		Task? GetTaskById(long taskId);
-		IDictionary<string, IList<Task>> GetProjectsByDay(DateOnly day);
-		List<DateOnly> GetDeadLinesList();
 		void UpdateTaskDeadline(long taskId, DateOnly date);
+		IDictionary<string, IList<Task>> GetProjectsByDay(DateOnly day);
 		List<(DateOnly, IList<Task>)> GetTasksByDeadline();
 		List<(DateOnly, IDictionary<string, IList<Task>>)> GetProjectsByDeadline();
 	}
@@ -69,7 +67,7 @@ namespace TaskList
 			identifiedTask.Done = done;
 		}
 
-		public Task? GetTaskById(long taskId)
+		private Task? GetTaskById(long taskId)
 		{
 			return _projects
 				.Select(project => project.Value.FirstOrDefault(task => task.Id == taskId))
@@ -87,7 +85,7 @@ namespace TaskList
 				);
 		}
 
-		public List<DateOnly> GetDeadLinesList()
+		private List<DateOnly> GetDeadLinesList()
 		{
 			var deadlines = _projects.Values
                           .SelectMany(tasks => tasks)
