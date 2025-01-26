@@ -47,7 +47,7 @@ namespace TaskList
 
 		private void SetDone(string idString, bool done)
 		{
-			if (string.IsNullOrWhiteSpace(idString) || int.TryParse(idString, out int id))
+			if (!int.TryParse(idString, out int id))
 				throw new Exception(string.Format("No id was given for command {0}", done? "check" : "uncheck"));
 
 			var identifiedTask = GetTaskById(id);

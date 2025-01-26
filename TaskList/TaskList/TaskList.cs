@@ -11,20 +11,18 @@ namespace TaskList
 
 
 		private readonly IConsole _console;
+		private readonly ITaskListService _taskListService;
 
-		public static void Main(string[] args)
-		{
-			new TaskList(new RealConsole()).Run();
-		}
 
-		public TaskList(IConsole console)
+		public TaskList(IConsole console, ITaskListService taskListService)
 		{
 			this._console = console;
+			this._taskListService = taskListService;
 		}
 
 		public void Run() // apparte klasse voor run
 		{
-			var executor =new TaskListExecutor(_console, new TaskListService());
+			var executor = new TaskListExecutor(_console, _taskListService);
 			_console.WriteLine(startupText);
 			while (true) {
 				_console.Write("> ");
@@ -32,7 +30,7 @@ namespace TaskList
 				if (command == QUIT) {
 					break;
 				}
-				executor.Execute(command); // apparte klasse --> met interface
+				executor.Execute(command);
 			}
 		}
 	}
