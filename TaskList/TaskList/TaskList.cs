@@ -12,7 +12,6 @@ namespace TaskList
 
 		private readonly IConsole _console;
 
-
 		public static void Main(string[] args)
 		{
 			new TaskList(new RealConsole()).Run();
@@ -25,7 +24,7 @@ namespace TaskList
 
 		public void Run() // apparte klasse voor run
 		{
-			var executor =new TaskListExecutor(_console);
+			var executor =new TaskListExecutor(_console, new TaskListService());
 			_console.WriteLine(startupText);
 			while (true) {
 				_console.Write("> ");

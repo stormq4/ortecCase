@@ -4,14 +4,16 @@ namespace TaskList
 {
 	public class TaskListExecutor
 	{
+		private readonly ITaskListService _taskListService;
 
-		private readonly IDictionary<string, IList<Task>> _tasks = new Dictionary<string, IList<Task>>();
+		private readonly IDictionary<string, IList<Task>> _taskLists = new Dictionary<string, IList<Task>>();
 		private long lastId = 0;
 		private readonly IConsole _console;
 
-		public TaskListExecutor(IConsole console)
+		public TaskListExecutor(IConsole console, ITaskListService taskListService)
 		{
 			_console = console;
+			_taskListService = taskListService;
 			TestData();
 		}
 
@@ -68,16 +70,16 @@ namespace TaskList
 			var command = commandRest[0];
 			switch (command) {
 				case "show":
-					Show(_tasks);
+					Show(_taskLists);
 					break;
 				case "add":
-					Add(commandRest[1]); // mooi errors afhandelen
+					Add(commandRest[1]);
 					break;
 				case "check":
-					Check(commandRest[1]); // mooi errors afhandelen
+					Check(commandRest[1]);
 					break;
 				case "uncheck":
-					Uncheck(commandRest[1]); // mooi errors afhandelen
+					UnCheck(commandRest[1]);
 					break;
 				case "help":
 					Help();
@@ -86,7 +88,7 @@ namespace TaskList
 					AddDeadline(commandRest[1]);
 					break;
 				case "today":
-					ShowTodaysProjects();
+					ViewTodaysProjects();
 					break;
 				case "view-by-deadline":
 					ViewByDeadlines();
@@ -111,6 +113,9 @@ namespace TaskList
 		// 	}
 		// }
 
+		private void Check (string idString) => _taskListService.Check(idString);
+		private void UnCheck (string idString) => _taskListService.UnCheck(idString);
+
 		private void Show(IDictionary<string, IList<Task>> tasks)
 		{
 			foreach (var project in tasks) {
@@ -122,7 +127,7 @@ namespace TaskList
 			}
 		}
 
-		private void ShowByDeadline(IDictionary<string, IList<Task>> projects, DateOnly deadline)
+		private void ShowTasksByDeadline(IDictionary<string, IList<Task>> projects, DateOnly deadline)
 		{
 			if (deadline == new DateOnly())
 				_console.WriteLine("No deadline:");
@@ -132,12 +137,12 @@ namespace TaskList
 			foreach (var project in projects) 
 			{
 				foreach(var task in project.Value)
-					_console.WriteLine("    {0}: {1} : deadline", task.Id, task.Description);
+					_console.WriteLine("    {0}: {1}", task.Id, task.Description);
 			}
 			_console.WriteLine();
 		}
 
-		private void ShowByDeadlineByGroup(IDictionary<string, IList<Task>> projects, DateOnly deadline)
+		private void ShowDeadlineByProject(IDictionary<string, IList<Task>> projects, DateOnly deadline)
 		{
 			if (deadline == new DateOnly())
 				_console.WriteLine("No deadline:");
@@ -148,82 +153,44 @@ namespace TaskList
 			{
 				_console.WriteLine("    " + project.Key + ":");
 				foreach(var task in project.Value)
-					_console.WriteLine("        {0}: {1} : deadline", task.Id, task.Description);
+					_console.WriteLine("        {0}: {1}", task.Id, task.Description);
 			}
 			_console.WriteLine();
 		}
 
 		private void ViewByDeadlines()
 		{
-			var deadlines = GetDeadLinesList();
+			var deadlines = _taskListService.GetDeadLinesList();
 			foreach (var deadline in deadlines)
 			{
-				var deadLineTasks = GetTasksByDay(deadline);
-				ShowByDeadline(deadLineTasks, deadline);
+				var deadLineTasks = _taskListService.GetTasksByDay(deadline);
+				ShowTasksByDeadline(deadLineTasks, deadline);
 			}
 		}
 
 		private void ViewByDeadlinesGroupByProject()
 		{
-			var deadlines = GetDeadLinesList();
+			var deadlines = _taskListService.GetDeadLinesList();
 			foreach (var deadline in deadlines)
 			{
-				var deadLineTasks = GetTasksByDay(deadline);
+				var deadLineTasks = _taskListService.GetTasksByDay(deadline);
 
-				ShowByDeadlineByGroup(deadLineTasks, deadline);
+				ShowDeadlineByProject(deadLineTasks, deadline);
 			}
-		}
-
-
-
-		private List<DateOnly> GetDeadLinesList()
-		{
-			var deadlines = _tasks.Values
-                          .SelectMany(tasks => tasks)
-                          .Where(task => task.Deadline != new DateOnly())
-                          .Select(task => task.Deadline)
-                          .Distinct()
-                          .OrderBy(deadline => deadline)
-                          .ToList();
-
-			deadlines.Add(new DateOnly());
-			return deadlines;
 		}
 
 		private void Add(string commandLine)
 		{
-			try {
-				var subcommandRest = commandLine.Split(" ".ToCharArray(), 2);
-				var subcommand = subcommandRest[0];
-				if (subcommand == "project") {
-					AddProject(subcommandRest[1]);
-				} else if (subcommand == "task") {
-					var projectTask = subcommandRest[1].Split(" ".ToCharArray(), 2);
-					AddTask(projectTask[0], projectTask[1]);
-				}
-				else
-					throw (new Exception());
-			} catch
-			{
-				_console.WriteLine("Please format the input like this add project <project name> or add task <project name> <task description");
+			var subcommandRest = commandLine.Split(" ".ToCharArray(), 2);
+			var subcommand = subcommandRest[0];
+			if (subcommand == "project") {
+				_taskListService.AddProject(subcommandRest[1]);
+			} else if (subcommand == "task") {
+				var projectTask = subcommandRest[1].Split(" ".ToCharArray(), 2);
+				_taskListService.AddTask(projectTask[0], projectTask[1]);
 			}
-		}
-
-		private void AddProject(string name)
-		{
-			//error
-			_tasks[name] = new List<Task>();
-		}
-
-		private void AddTask(string project, string description)
-		{
-			// error
-			if (!_tasks.TryGetValue(project, out IList<Task> projectTasks))
-			{
-				Console.WriteLine("Could not find a project with the name \"{0}\".", project);
-				return;
-			}
-			projectTasks.Add(new Task { Id = NextId(), Description = description, Done = false });
+			else
+				throw (new Exception("Please format the input like this add project <project name> or add task <project name> <task description"));
 		}
 
 		private void AddDeadline(string commandLine)
@@ -234,7 +201,7 @@ namespace TaskList
 				string dateString = commandRest[1];
 				DateOnly dateOnly = DateOnly.ParseExact(dateString, "d-M-yyyy");
 
-				var task = GetTaskById(taskId);
+				var task = _taskListService.GetTaskById(taskId);
 				if (task == null)
 				{
 					_console.WriteLine("Could not find a task with an ID of {0}.", taskId);
@@ -247,58 +214,14 @@ namespace TaskList
 			}
 		}
 
-		private Task? GetTaskById(long taskId)
-		{
-			return _tasks
-				.Select(project => project.Value.FirstOrDefault(task => task.Id == taskId))
-				.Where(task => task != null)
-				.FirstOrDefault();
-		}
 
-		private void Check(string idString)
-		{
-			SetDone(idString, true);
-		}
-
-		private void Uncheck(string idString)
-		{
-			SetDone(idString, false);
-		}
-
-		private void SetDone(string idString, bool done)
-		{
-			if (string.IsNullOrEmpty(idString))
-			{
-				// add something
-				return;
-			}
-			int id = int.Parse(idString);
-			var identifiedTask = GetTaskById(id);
-			if (identifiedTask == null) {
-				_console.WriteLine("Could not find a task with an ID of {0}.", id);
-				return;
-			}
-
-			identifiedTask.Done = done;
-		}
-
-		private void ShowTodaysProjects()
+		private void ViewTodaysProjects()
 		{
 				DateOnly today = DateOnly.FromDateTime(DateTime.Now);
 				// Filter tasks and reconstruct the dictionary
-				IDictionary<string, IList<Task>> todayTasks = GetTasksByDay(today);
+				IDictionary<string, IList<Task>> todayTasks = _taskListService.GetTasksByDay(today);
 				
 				Show(todayTasks);
-		}
-
-		private IDictionary<string, IList<Task>> GetTasksByDay(DateOnly day)
-		{
-			return _tasks
-				.Where(project => project.Value.Any(task => task.Deadline == day))
-				.ToDictionary(
-					kvp => kvp.Key,
-					kvp => (IList<Task>)kvp.Value.Where(task => task.Deadline == day).ToList()
-				);
 		}
 
 		private void Help()
@@ -309,17 +232,16 @@ namespace TaskList
 			_console.WriteLine("  add task <project name> <task description>");
 			_console.WriteLine("  check <task ID>");
 			_console.WriteLine("  uncheck <task ID>");
+			_console.WriteLine("  deadline <task ID> <d-m-yyyy>");
+			_console.WriteLine("  today");
+			_console.WriteLine("  view-by-deadline");
+			_console.WriteLine("  view-project-by-deadline");
 			_console.WriteLine();
 		}
 
 		private void UnrecognisedCommandError(string command)
 		{
 			_console.WriteLine("I don't know what the command \"{0}\" is.", command);
-		}
-
-		private long NextId()
-		{
-			return ++lastId;
 		}
 	}
 }
