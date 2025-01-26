@@ -63,17 +63,20 @@ namespace TaskList
 
 		public void Execute(string commandLine)
 		{
+			var commandRest = commandLine.Split(" ".ToCharArray(), 2);
+			var command = commandRest[0];
 			try 
 			{
-				var commandRest = commandLine.Split(" ".ToCharArray(), 2);
-				var command = commandRest[0];
 				ExecuteSwitch(command, commandRest);
 			} 
+			catch (IndexOutOfRangeException ex)
+			{
+				_console.WriteLine(string.Format("Invalid input for command '{0}'. Enter 'help' for more information.", command));
+			}
 			catch (Exception ex)
 			{
 				_console.WriteLine(ex.Message);
 			}
-
 		}
 
 		private void ExecuteSwitch(string command, string[] commandRest)
@@ -112,30 +115,16 @@ namespace TaskList
 			}
 		}
 
-		// private void Show(IDictionary<string, IList<Task>> tasks)
-		// {
-		// 	foreach (var project in tasks) {
-		// 		_console.WriteLine(project.Key);
-		// 		foreach (var task in project.Value) {
-		// 			_console.WriteLine("    [{0}] {1}: {2}", (task.Done ? 'x' : ' '), task.Id, task.Description);
-		// 		}
-		// 		_console.WriteLine();
-		// 	}
-		// }
-
 		private void Check (string idString) => _taskListService.Check(idString);
 		private void UnCheck (string idString) => _taskListService.UnCheck(idString);
-
-		
-
 		private void ShowProjects() => Show(_taskListService.GetProjects());
 
-		private void Show(IDictionary<string, IList<Task>> tasks)
+		private void Show(IDictionary<string, IList<Task>> projects)
 		{
-			foreach (var project in tasks) {
+			foreach (var project in projects) {
 				_console.WriteLine(project.Key);
 				foreach (var task in project.Value) {
-					_console.WriteLine("    [{0}] {1}: {2} : deadline-->    {3}", (task.Done ? 'x' : ' '), task.Id, task.Description, task.Deadline);
+					_console.WriteLine("    [{0}] {1}: {2}", (task.Done ? 'x' : ' '), task.Id, task.Description);
 				}
 				_console.WriteLine();
 			}
@@ -209,21 +198,19 @@ namespace TaskList
 
 		private void AddDeadline(string commandLine)
 		{
-			try {
-				var commandRest = commandLine.Split(" ".ToCharArray(), 2);
-				long taskId = long.Parse(commandRest[0]);
-				string dateString = commandRest[1];
-				DateOnly dateOnly = DateOnly.ParseExact(dateString, "d-M-yyyy");
-
-				var task = _taskListService.GetTaskById(taskId);
-				if (task == null)
-					throw new Exception(string.Format("Could not find a task with an ID of {0}.", taskId));
-
-				task.Deadline = dateOnly;
-			} 
-			catch {
+			var commandRest = commandLine.Split(" ".ToCharArray(), 2);
+			if (!long.TryParse(commandRest[0], out long taskId))
 				throw new Exception("The given deadline input should be like this: 'deadline <task id> <d-m-yyyy>'");
-			}
+
+			string dateString = commandRest[1];
+			if (DateOnly.TryParseExact(dateString, "d-M-yyyy", out DateOnly date))
+				throw new Exception("The given deadline input should be like this: 'deadline <task id> <d-m-yyyy>'");
+
+			var task = _taskListService.GetTaskById(taskId);
+			if (task == null)
+				throw new Exception(string.Format("Could not find a task with an ID of {0}.", taskId));
+
+			task.Deadline = date;
 		}
 
 

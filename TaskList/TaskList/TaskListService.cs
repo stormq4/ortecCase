@@ -22,7 +22,8 @@ namespace TaskList
 
 		public void AddProject(string name)
 		{
-			//error
+			if (_projects.ContainsKey(name))
+            	throw new Exception($"Project '{name}' already exists.");
 			_projects[name] = new List<Task>();
 		}
 
@@ -46,12 +47,10 @@ namespace TaskList
 
 		private void SetDone(string idString, bool done)
 		{
-			if (string.IsNullOrEmpty(idString))
-				throw new Exception("No id was given");
+			if (string.IsNullOrWhiteSpace(idString) || int.TryParse(idString, out int id))
+				throw new Exception(string.Format("No id was given for command {0}", done? "check" : "uncheck"));
 
-			int id = int.Parse(idString);
 			var identifiedTask = GetTaskById(id);
-			
 			if (identifiedTask == null) 
 				throw new Exception(string.Format("Could not find a task with an ID of {0}.", id));
 

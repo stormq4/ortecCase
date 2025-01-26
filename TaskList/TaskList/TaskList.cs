@@ -35,7 +35,5 @@ namespace TaskList
 				executor.Execute(command); // apparte klasse --> met interface
 			}
 		}
-
-
 	}
 }
