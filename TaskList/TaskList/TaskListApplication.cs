@@ -31,9 +31,9 @@ else
 
     var taskListService = app.Services.GetRequiredService<ITaskListService>();
 
+    // TODO: async tasks
     System.Threading.Tasks.Task.Run(() =>
     {
-        // Start CLI
         new TaskList.TaskList(new RealConsole(), taskListService).Run();
     });
 

@@ -6,8 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace TaskList
 {
+    /*
+        Todo
+        Write propper Api Tests
+    */ 
     [ApiController]
-    [Route("tasks")]
     public class TasksController : ControllerBase
     {
         private readonly ITaskListService _taskListService;
@@ -17,7 +20,7 @@ namespace TaskList
             _taskListService = taskListService;
         }
 
-        [HttpGet]
+        [HttpGet("tasks")]
         public IActionResult GetTasks()
         {
             var tasks =  _taskListService.GetProjects();
@@ -71,7 +74,7 @@ namespace TaskList
                 if (!DateOnly.TryParseExact(deadline, "d-M-yyyy", out DateOnly date))
                     throw new Exception("Please format deadline like this d-m-yyyy'");
                 _taskListService.UpdateTaskDeadline(task_id, date);
-                return Ok();
+                return Created();
             }
             catch (Exception ex)
             {

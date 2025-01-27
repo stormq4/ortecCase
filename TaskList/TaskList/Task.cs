@@ -13,4 +13,7 @@ namespace TaskList
 
 		public DateOnly Deadline {get; set; }
 	}
+
+	// todo: project on to many relation to task class + ORM 
+	// if tasks can be assigned to 
 }

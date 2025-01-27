@@ -13,6 +13,10 @@ namespace TaskList
 		List<(DateOnly, IDictionary<string, IList<Task>>)> GetProjectsByDeadline();
 	}
 
+	/* Todo 
+		Additional service for a projectService injected into the task service
+		Use an orm with a database to store the data
+	*/
 	public class TaskListService: ITaskListService
 	{
 		private readonly IDictionary<string, IList<Task>> _projects = new Dictionary<string, IList<Task>>();
