@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace TaskList
 {
+
+	// todo: new project class with a one to many relation to task class + ORM 
+	// nullable deadline, description
 	public class Task
 	{
 		public long Id { get; set; }
@@ -13,7 +16,4 @@ namespace TaskList
 
 		public DateOnly Deadline {get; set; }
 	}
-
-	// todo: project on to many relation to task class + ORM 
-	// if tasks can be assigned to 
 }

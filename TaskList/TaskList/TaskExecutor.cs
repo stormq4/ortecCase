@@ -6,7 +6,7 @@ namespace TaskList
 	/*
 		Todo 
 		- introduce show class
-		- seperate class 
+		- seperate class for talking to the service
 	*/
 	public class TaskListExecutor
 	{

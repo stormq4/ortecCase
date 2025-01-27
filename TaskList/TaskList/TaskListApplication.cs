@@ -1,5 +1,7 @@
 using TaskList;
 
+    // TODO: async tasks 
+    // seperate application for cli and api
 if (args.Length > 0)
 {
     CliProgram.Main(args);
@@ -31,7 +33,6 @@ else
 
     var taskListService = app.Services.GetRequiredService<ITaskListService>();
 
-    // TODO: async tasks
     System.Threading.Tasks.Task.Run(() =>
     {
         new TaskList.TaskList(new RealConsole(), taskListService).Run();

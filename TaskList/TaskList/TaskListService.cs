@@ -16,6 +16,7 @@ namespace TaskList
 	/* Todo 
 		Additional service for a projectService injected into the task service
 		Use an orm with a database to store the data
+		this means getting rid of storing anything in the dictionary
 	*/
 	public class TaskListService: ITaskListService
 	{
